@@ -10,110 +10,93 @@ import pandas as pd
 
 # Reading the data
 df = pd.read_csv("adult.data",na_values="?", skipinitialspace=True)
-df.info()   # df.isnull().sum()
+#cheking the inpu data for null values
+df.info()   
+df.isnull().sum()
 
 # Renaming the columns correctly
 df.columns = ['Age', 'Workclass', 'fnlwgt', 'Education', 'Education-num', 'Marital-status', \
               'Occupation', 'Relationship', 'Race', 'Sex', 'Capital-gain', 'Capital-loss', \
               'Hours-per-week', 'Native-country', 'Earning']
 
-rows_before_droppinig = df.shape[0]
-# Printing all the columns
-print(df.columns)
 
 # Checking the NA values
 df.isnull().sum()
-df1= df.corr()
 
-# Dropping the NA values which is actually 7.368% of total Data
-# It is observed that in most of the missing data set, 
-# the ‘workclass’ variable and ‘occupation’ variable are missing data together. 
-# And the remaining have ‘nativecountry’ variable missing. We could handle the 
-# missing values by imputing the data. However, since ‘workclass’, ‘occupation’ 
-# and ‘nativecountry’ could potentially be very good predictors of income, 
-# imputing may simply skew the model.
+# Dropping the NA values in below 3 categorical columns as its only 7% of the data
+# the ‘workclass’ ‘occupation’ ‘nativecountry’ 
 
-df_opt = df.dropna()
-rows_after_droppinig = df_opt.shape[0]
+df_new = df.dropna()
 
 # Checking the NA values
-df_opt.isnull().sum()
+df_new.isnull().sum()
 
-# number of rows dropped
-diff = rows_before_droppinig - rows_after_droppinig
-print("Total number of rows dropped is {} wich is {:.4}% of total rows."   \
-              .format(diff,(diff/rows_before_droppinig)*100))
-print('-'*50)
-
-# applying one hot and lebel encoding on these columns.
+# applying lebel encoding on these columns.
 # Fist print the unique values of each features.
-cat_features = ['Workclass', 'Education', 'Marital-status', 'Occupation', 'Relationship',\
+cat_cols = ['Workclass', 'Education', 'Marital-status', 'Occupation', 'Relationship',\
                 'Race', 'Sex', 'Native-country', 'Earning' ]
-print("Total numbers of unique values in catagorical features are: ")
+'''
+print("Numbers of unique values in each catagorical columns are: ")
 
-for feature in cat_features:
-    print(feature + "has total : " + str(len(df[feature].unique())))
-
-# Applying One hot encoding on only catagorical columns, i.e. preferred_foot
+for feature in cat_cols:
+    print(feature + " has total : " + str(len(df_new[feature].unique())))
+'''
+# Applying label encoding on only catagorical columns, i.e. preferred_foot
 from sklearn.preprocessing import LabelEncoder
 label_encoder = LabelEncoder()
 
-for feature in cat_features:
-    #feature = 'Workclass'
-    df_opt[feature] = label_encoder.fit_transform(df_opt[feature])
+for cols in cat_cols:
+    df_new[cols] = label_encoder.fit_transform(df_new[cols])
     
 
 # Data after one hot encodng of all catagorical data
-df_opt.head()
+df_new.head()
 
-# Defining X and y from the Dataset
-X = df_opt.iloc[:,:-1]
-y = df_opt.Earning
+# splitting the data set into X and Y Axis
+X = df_new.iloc[:,:-1]
+y = df_new.Earning
 
+# Splitting the data into train and test data by 85:15 ratio
 from sklearn.model_selection import train_test_split
-X_train,X_test,y_train,y_test = train_test_split(X,y,test_size=0.10,random_state=0)
+X_train,X_test,y_train,y_test = train_test_split(X,y,test_size=0.15,random_state=0)
 
-backwardEle(X, y)
 
-# Here We can see X14 i.e. "Native-country" is having P value > 0.05
-# o better to eleminate this column
+# building the optimal model using backward elimination
+# SL = 0.05 and eliminating those features which have p > SL
+import statsmodels.formula.api as sm
+X_train = np.append(arr = np.ones((25636,1)).astype(int), values = X_train, axis = 1)
+X_train_opt = X_train[:,[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14]]
+regressor_OLS = sm.OLS(endog = y_train, exog = X_train_opt).fit()
+regressor_OLS.summary()
+
+# Here We can see Native-country is having P value > 0.05, so can be eliminated now.
 X_train.drop(['Native-country'], axis=1, inplace=True)
-
-# Same time drop this column from test set as well
 X_test.drop(['Native-country'], axis=1, inplace=True)
 
-X_train.head()
+# Checking the P values again if any other column can be eliminated
+X_train_opt = X_train[:,[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13]]
+regressor_OLS = sm.OLS(endog = y_train, exog = X_train_opt).fit()
+regressor_OLS.summary()
+# No more eleminations are required based on the P value
 
-backwardEle(X, y)
-
-# After eleminating 'Native-country', there is no more columns which are having P value > 0.05
-# i.e. No more eleminations are required.
-
-# Applying Logistic regression
 # Logistic Regression 
-
 from sklearn.linear_model import LogisticRegression
 classifier=LogisticRegression()
 classifier.fit(X_train,y_train)
 scor=classifier.score(X_train,y_train)
 scor
 
-
-# improvement required
-# Cross validation from SKlearn
-
+# Cross validation
 from sklearn.cross_validation import cross_val_score
 cv = cross_val_score(estimator = classifier, X=X,y=y,scoring='accuracy',cv=50)
 print(cv.mean())
 
 # DecisionTreeClassifier
-
 from sklearn.tree import DecisionTreeClassifier
 dtree = DecisionTreeClassifier(criterion='entropy', max_depth=5, random_state=0)
 dtree.fit(X_train, y_train)
 tscore=dtree.score(X_test, y_test)
 print(tscore)
-
 
 # RandomForestRegressor
 
@@ -153,3 +136,22 @@ classifier = xgboost.XGBClassifier()
 classifier.fit(X_train,y_train)
 cscore=classifier.score(X_train,y_train)
 print(cscore)
+
+##########################  Naive Bayes  ####################################################################
+
+# Fitting Naive Bayes classifier to the opt Training set
+from sklearn.naive_bayes import GaussianNB
+nbclassifier = GaussianNB()
+nbclassifier.fit(X_train, y_train)
+nbscore=nbclassifier.score(X_train,y_train)
+print(nbscore)
+
+
+############################  Support Vector Machine (SVM)  ################################################  
+
+# Fitting Support Vector Machine (SVM) to the opt Training set
+from sklearn.svm import SVC
+svmclassifier = SVC(kernel = 'rbf')
+svmclassifier.fit(X_train, y_train)
+svmscore=svmclassifier.score(X_train,y_train)
+print(svmscore)
