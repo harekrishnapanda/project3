@@ -6,19 +6,35 @@ Created on Wed Sep 9 10:22:05 2018
 """
 # Importing the liabraries
 import numpy as np
-import pandas as pd 
+import pandas as pd
+import matplotlib.pyplot as plt
 
 # Reading the data
 df = pd.read_csv("adult.data",na_values="?", skipinitialspace=True)
 #cheking the inpu data for null values
 df.info()   
-df.isnull().sum()
 
 # Renaming the columns correctly
 df.columns = ['Age', 'Workclass', 'fnlwgt', 'Education', 'Education-num', 'Marital-status', \
               'Occupation', 'Relationship', 'Race', 'Sex', 'Capital-gain', 'Capital-loss', \
               'Hours-per-week', 'Native-country', 'Earning']
 
+# Data Visualization
+fig = plt.figure(figsize=(18,10))
+
+plt.subplot2grid((2,3),(0,0))
+df.Workclass.value_counts(normalize=True).plot(kind="bar", alpha=0.5)
+plt.title("Workclass")
+
+plt.subplot2grid((2,3),(0,1))
+df.Earning.value_counts(normalize=True).plot(kind="bar", alpha=0.5)
+plt.title("Earning")
+
+plt.subplot2grid((2,3),(0,3))
+df.Occupation.value_counts(normalize=True).plot(kind="bar", alpha=0.5)
+plt.title("Occupation")
+
+plt.show()
 
 # Checking the NA values
 df.isnull().sum()
@@ -26,6 +42,8 @@ df.isnull().sum()
 # Dropping the NA values in below 3 categorical columns as its only 7% of the data
 # the ‘workclass’ ‘occupation’ ‘nativecountry’ 
 df_new = df.dropna()
+##########df_new = df.apply(lambda x:x.fillna(x.value_counts().index[0]))
+##########df.dropna(subset=['Workclass','Occupation','Native-country'],how='all').shape
 
 # Checking the NA values
 df_new.isnull().sum()
