@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 """
 Created on Wed Sep 9 10:22:05 2018
-
 @author: Harekrishna
 """
 # Importing the liabraries
@@ -30,7 +29,7 @@ plt.subplot2grid((2,3),(0,1))
 df.Earning.value_counts(normalize=True).plot(kind="bar", alpha=0.5)
 plt.title("Earning")
 
-plt.subplot2grid((2,3),(0,3))
+plt.subplot2grid((2,3),(0,2))
 df.Occupation.value_counts(normalize=True).plot(kind="bar", alpha=0.5)
 plt.title("Occupation")
 
@@ -75,20 +74,22 @@ X_train,X_test,y_train,y_test = train_test_split(X,y,test_size=0.2,random_state=
 # building the optimal model using backward elimination
 # SL = 0.05 and eliminating those features which have p > SL
 import statsmodels.formula.api as sm
-X_train = np.append(arr = np.ones((25636,1)).astype(int), values = X_train, axis = 1)
-X_train_opt = X_train[:,[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14]]
-regressor_OLS = sm.OLS(endog = y_train, exog = X_train_opt).fit()
+X = np.append(arr = np.ones((30161,1)).astype(int), values = X, axis = 1)
+X_opt = X[:,[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14]]
+regressor_OLS = sm.OLS(endog = y, exog = X_opt).fit()
 regressor_OLS.summary()
+# Checking the P values again if any other column can be eliminated
+# No more eleminations are required based on the P value
+X_opt = X[:,[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13]]
+regressor_OLS = sm.OLS(endog = y, exog = X_opt).fit()
+regressor_OLS.summary()
+
 
 # Here We can see Native-country is having P value > 0.05, so can be eliminated now.
 X_train.drop(['Native-country'], axis=1, inplace=True)
 X_test.drop(['Native-country'], axis=1, inplace=True)
 
-# Checking the P values again if any other column can be eliminated
-X_train_opt = X_train[:,[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13]]
-regressor_OLS = sm.OLS(endog = y_train, exog = X_train_opt).fit()
-regressor_OLS.summary()
-# No more eleminations are required based on the P value
+
 
 ##########################  Naive Bayes  ####################################################################
 
@@ -97,11 +98,10 @@ from sklearn.naive_bayes import GaussianNB
 nbclassifier = GaussianNB()
 nbclassifier.fit(X_train, y_train)
 nbscore=nbclassifier.score(X_train,y_train)
-print(nbscore)
+print('score with Naive Bayes is ',+ nbscore)
 
 '''
 ############################  Support Vector Machine (SVM)  ################################################  
-
 # Fitting Support Vector Machine (SVM) to the opt Training set
 from sklearn.svm import SVC
 svmclassifier = SVC(kernel = 'rbf')
